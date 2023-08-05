@@ -143,6 +143,6 @@ export function getRIFF(sbuf8) {
 		bitsPerSample: (sbuf8[fmtStart+22]) + (sbuf8[fmtStart+23]<<8),
 	}}
 	console.timeEnd('getRIFF')
-	console.log(ret)
+	//console.log(ret)
 	return ret
 }

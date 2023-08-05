@@ -29,7 +29,7 @@ import {getAsString} from './getAsString.js'
 import {getRIFF} from './getRIFF.js'
 import {getFLAC} from './getFLAC.js'
 import {getOGG} from './getOGG.js'
-//import {getMP4} from './getMP4.js'
+import {getMP4} from './getMP4.js'
 import {getEBML} from './getEBML.js'
 import {getMP3} from './getMP3.js'
 import {getID3} from './getID3.js'
@@ -44,7 +44,7 @@ export function getAudioInfo (buf, mimeType) {
 
 	// now i have the mimeType but i keep this and do not use the mimeType
 	// identify type by byte signature
-	const fType = getAsString(sbuf8, 8)
+	let fType = getAsString(sbuf8, 8)
 	if (fType.substring(0, 4) === 'RIFF') {
 		ret = {...ret, ...getRIFF(sbuf8)}
 	} else if (fType.substring(0, 4) === 'fLaC') {
@@ -56,21 +56,8 @@ export function getAudioInfo (buf, mimeType) {
 	} else if (fType.substring(0, 3) === 'ID3'	// MP3 the ones with ID3v2 tag
 	|| (sbuf8[0] === 0xFF && (sbuf8[1] === 0xFB || sbuf8[1] === 0xF3 || sbuf8[1] === 0xF2))) {	// without tag or tag at end
 		ret = {...ret, ...getMP3(sbuf8)}
-	} else if (fType.substring(4, 4) === 'ftyp') {
-		fType = 'MP4'
-		// this is more a video container
-		// http://xhelmboyx.tripod.com/formats/mp4-layout.txt
-		// big endian
-		//var subtype = ret.str.substr(8, 4); // "avc1", "iso2", "isom", "mmp4", "mp41", "mp42", "mp71", "msnv", "ndas", "ndsc", "ndsh", "ndsm", "ndsp", "ndss", "ndxc", "ndxh", "ndxm", "ndxp", "ndxs"
-		let str = getAsString(sbuf8)
-		var mdhdStart = str.indexOf('mdhd')
-		var version = sbuf8[mdhdStart+4]
-		//console.log('MP4 Version '+ version)
-		if (version === 1) {
-			var srate = (sbuf8[mdhdStart+16+8]<<24) + (sbuf8[mdhdStart+17+8]<<16) + (sbuf8[mdhdStart+18+8]<<8) + sbuf8[mdhdStart+19+8]
-		} else {
-			var srate = (sbuf8[mdhdStart+16]<<24) + (sbuf8[mdhdStart+17]<<16) + (sbuf8[mdhdStart+18]<<8) + sbuf8[mdhdStart+19]
-		}
+	} else if (fType.substring(4, 8) === 'ftyp') {
+		ret = {...ret, ...getMP4(sbuf8)}
 	} else {
 		/*
 			AAC (audio/x-m4a)
@@ -79,7 +66,7 @@ export function getAudioInfo (buf, mimeType) {
 			WMP (audio/x-ms-wma)
 			AC3 (audio/vnd.dolby.dd-raw)
 		*/
-		console.error('getAudioInfo found unknown format', fType, mimeType)
+		console.error('getAudioInfo found unknown format', getAsString(sbuf8, 256), mimeType)
 	}
 
 	ret.tags = {...ret.tags, ...getID3(sbuf8)}	// join in ID3s
